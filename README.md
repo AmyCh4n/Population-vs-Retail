@@ -1,6 +1,6 @@
 # pop_vs_retail
 
-This code wrangles raw data to produce analysis for the relationship between population (number of people) and retail floorspace. 
+This code wrangles raw data to produce analysis for the relationship between population (number of people) and retail floorspace at borough and LSOA levels. 
 
 References for datasets: 
 London Datastore. (2014) Statistical GIS Boundary Files for London. Available at: https://data.london.gov.uk/dataset/statistical-gis-boundary-files-london
