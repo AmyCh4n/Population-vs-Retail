@@ -32,6 +32,7 @@ library(plotly)
 library(raster)
 library(downloader)
 library(rgdal)
+library(caret)
 
 #Read in population data LSOA
 pop_lsoa <- read_csv("ons-mye-LSOA11-custom-age-tool.csv",
@@ -136,17 +137,17 @@ lb_lsoa <- lb_lsoa %>%
 tm_shape(lb_lsoa)+
   tm_rgb()+
   
-  #Mapping retail per head rph_lon
-  #Merge lb_lsoa data with rph_lon
-  mergelbrph <- lb_lsoa%>%
-  filter(str_detect(LSOA11CD, "^E01"))%>%
-  merge(.,
-        rph_lon, 
-        by.x=c("LSOA11CD","LSOA11NM"), 
-        by.y=c("area_code","area_name"),
-        no.dups = TRUE)%>%
-  distinct(.,LSOA11CD, 
-           .keep_all = TRUE)
+#Mapping retail per head rph_lon
+#Merge lb_lsoa data with rph_lon
+mergelbrph <- lb_lsoa%>%
+filter(str_detect(LSOA11CD, "^E01"))%>%
+merge(.,
+      rph_lon, 
+      by.x=c("LSOA11CD","LSOA11NM"), 
+      by.y=c("area_code","area_name"),
+      no.dups = TRUE)%>%
+distinct(.,LSOA11CD, 
+         .keep_all = TRUE)
 #Map mergelbrph
 #Search for colour palette want to use
 palette_explorer()
@@ -154,20 +155,20 @@ palette_explorer()
 tmap_mode("plot")
 #Define the map elements
 rph_map <- tm_shape(mergelbrph)+
-  #Toggle year of interest (data ranges from 2004 to 2014)
-  tm_polygons("rph2014",
-              style="jenks",
-              palette="Set1",
-              midpoint=NA,
-              alpha = 1,
-              border.alpha = 0) +
-  tm_compass(position = c("left","bottom"),type = "arrow")+
-  tm_scale_bar(position = c("left","bottom"))+
-  tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
-  #Layer borough outlines on top
-  tm_shape(lb_borough)+
-  tm_borders(col = "black",
-             alpha = 0.4)
+#Toggle year of interest (data ranges from 2004 to 2014)
+tm_polygons("rph2014",
+            style="jenks",
+            palette="Set1",
+            midpoint=NA,
+            alpha = 1,
+            border.alpha = 0) +
+tm_compass(position = c("left","bottom"),type = "arrow")+
+tm_scale_bar(position = c("left","bottom"))+
+tm_layout(legend.position = c("right", "bottom"), frame = FALSE)+
+#Layer borough outlines on top
+tm_shape(lb_borough)+
+tm_borders(col = "black",
+           alpha = 0.4)
 #Print map
 rph_map
 #Export map to PNG (toggle the year in the file name)
@@ -243,9 +244,17 @@ london_pop <- london_pop[,c(3,4)]
 yearpop <- london_pop$year
 population <- london_pop$population
 #Plot the line graph
-# Plot with main and axis titles
+#Plot with main and axis titles
 plot(yearpop, population, main = "London Population",
      xlab = "Year", ylab = "Population", frame = FALSE)
+#Add regression line
+plot(yearpop, population, main = "London Population",
+     xlab = "Year", ylab = "Population",
+     pch = 19, frame = FALSE)
+abline(lm(y ~ x, data = london_pop), col = "blue")
+#Calculate R-squared
+resp <- caret::postResample(yearpop, population)
+rsqp <- resp[2]
 
 #Plot line graph for retail floorspace (borough)
 #Read in data for retail (borough)
@@ -289,24 +298,35 @@ london_ret <- london_ret[,c(3,4)]
 yearret <- london_ret$year
 ret <- london_ret$retail_floor
 #Plot the line graph
-# Plot with main and axis titles
+#Plot with main and axis titles
 plot(yearret, ret, main = "London Retail Floorspace",
      xlab = "Year", ylab = "Retail Floorspace", frame = FALSE)
+#Add regression line
+plot(yearret, ret, main = "London Retail Floorspace",
+     xlab = "Year", ylab = "Retail Floorspace",
+     pch = 19, frame = FALSE)
+abline(lm(y ~ x, data = london_ret), col = "blue")
+#Calculate R-squared
+resr <- caret::postResample(yearret, ret)
+rsqr <- resr[2]
 
 #Plot a scatter graph for retail and population 
 #Create variable values
 x <- london_pop$population
 y <- london_ret$retail_floor
-# Plot with main and axis titles
-# Change point shape (pch = 19) and remove frame.
+#Plot with main and axis titles
+#Change point shape (pch = 19) and remove frame.
 plot(x, y, main = "Population v Retail",
      xlab = "Population", ylab = "Retail Floorspace",
      pch = 19, frame = FALSE)
-# Add regression line
+#Add regression line
 plot(x, y, main = "Population v Retail",
      xlab = "Population", ylab = "Retail Floorspace",
      pch = 19, frame = FALSE)
 abline(lm(y ~ x, data = pop_retail_london), col = "blue")
+#Calculate R-squared
+respvr <- caret::postResample(x, y)
+rsqpvr <- respvr[2]
 
 #Location Quotient 
 #Read in all business floorspace (lsoa level)
